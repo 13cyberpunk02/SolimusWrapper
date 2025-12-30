@@ -2,7 +2,8 @@
 
 [![NuGet](https://img.shields.io/nuget/v/SolimusWrapper.svg)](https://www.nuget.org/packages/SolimusWrapper)
 [![License](https://img.shields.io/github/license/13cyberpunk02/SolimusWrapper)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-10)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
+[![Build](https://img.shields.io/github/actions/workflow/status/13cyberpunk02/SolimusWrapper/build.yml)](https://github.com/13cyberpunk02/SolimusWrapper/actions)
 
 Лёгкая и оптимизированная библиотека для работы с CLI процессами в .NET. Простой и интуитивный API для запуска внешних команд с поддержкой перенаправления потоков, таймаутов, отмены и кросс-платформенной работы.
 
@@ -16,6 +17,52 @@
 - **Кросс-платформенность** — Windows, Linux, macOS
 - **Оптимизация памяти** — использование ArrayPool, ValueTask
 - **Native AOT** — поддержка trimming
+- **Zero Dependencies** — никаких внешних зависимостей
+
+## 📁 Структура проекта
+```
+SolimusWrapper/
+├── README.md                              # Главная документация
+├── LICENSE                                # MIT License
+├── SolimusWrapper.sln                       # Solution файл
+│
+├── src/
+│   └── SolimusWrapper.Core/                      # 📦 Основная библиотека
+│       ├── README.md
+│       ├── SolimusWrapper.Core.csproj
+│       ├── Command.cs
+│       ├── CommandResult.cs
+│       ├── CommandExtensions.cs
+│       ├── PipeTarget.cs
+│       ├── PipeSource.cs
+│       ├── Optional.cs
+│       └── Builders/
+│           └── CommandBuilder.cs
+│
+├── samples/
+│   └── SolimusWrapper.Demo/                 # 🎮 Примеры использования
+│       ├── README.md
+│       ├── SolimusWrapper.Demo.csproj
+│       └── Program.cs
+│
+└── tests/
+    └── SolimusWrapper.Tests/                # 🧪 Unit-тесты
+        ├── README.md
+        ├── SolimusWrapper.Tests.csproj
+        ├── CommandTests.cs
+        ├── CommandBuilderTests.cs
+        ├── CommandResultTests.cs
+        ├── PipeTargetTests.cs
+        ├── PipeSourceTests.cs
+        └── Fixtures/
+            └── TestHelper.cs
+```
+
+| Проект | Тип | Описание |
+|--------|-----|----------|
+| `SolimusWrapper.Core` | Class Library | Ядро библиотеки (NuGet пакет) |
+| `SolimusWrapper.Demo` | Console App | Примеры использования |
+| `SolimusWrapper.Tests` | xUnit Tests | Unit-тесты |
 
 ## 📦 Установка
 ```bash
@@ -143,7 +190,7 @@ await Command.Run("node")
     .ExecuteAsync();
 
 // Несколько переменных сразу
-var envVars = new Dictionary<string, string?>
+var envVars = new Dictionary
 {
     ["API_KEY"] = "secret",
     ["DEBUG"] = "true"
@@ -313,52 +360,58 @@ var found = await CommandExtensions.FindFiles("*.cs", "/path/to/search").Execute
 var exists = await CommandExtensions.FileExists("myfile.txt").ExecuteAndReadOutputAsync();
 ```
 
-## 📊 PipeTarget
+## 📊 API Reference
+
+### Command
 
 | Метод | Описание |
 |-------|----------|
-| `PipeTarget.Null` | Отбрасывает вывод |
-| `PipeTarget.ToStringBuilder(sb)` | В StringBuilder |
-| `PipeTarget.ToDelegate(action)` | Вызывает action для каждой строки |
-| `PipeTarget.ToStream(stream)` | В поток |
-| `PipeTarget.ToFile(path)` | В файл |
+| `Run(string)` | Создаёт новую команду |
+| `WithArguments()` | Устанавливает аргументы |
+| `WithWorkingDirectory()` | Устанавливает рабочую директорию |
+| `WithEnvironmentVariable()` | Добавляет переменную окружения |
+| `WithEnvironmentVariables()` | Добавляет несколько переменных |
+| `WithStandardOutputPipe()` | Перенаправляет stdout |
+| `WithStandardErrorPipe()` | Перенаправляет stderr |
+| `WithStandardInputPipe()` | Устанавливает stdin |
+| `WithEncoding()` | Устанавливает кодировку |
+| `WithValidation()` | Включает/выключает проверку exit code |
+| `WithTimeout()` | Устанавливает таймаут |
+| `OnExit()` | Callback при завершении |
+| `ExecuteAsync()` | Выполняет команду |
+| `ExecuteAndReadOutputAsync()` | Выполняет и возвращает stdout |
+| `ExecuteAndReadAllAsync()` | Выполняет и возвращает stdout + stderr |
 
-## 📥 PipeSource
+### PipeTarget
 
 | Метод | Описание |
 |-------|----------|
-| `PipeSource.Null` | Пустой ввод |
-| `PipeSource.FromString(text)` | Из строки |
-| `PipeSource.FromStream(stream)` | Из потока |
-| `PipeSource.FromFile(path)` | Из файла |
-| `PipeSource.FromBytes(data)` | Из массива байтов |
+| `Null` | Отбрасывает вывод |
+| `ToStringBuilder(sb)` | В StringBuilder |
+| `ToDelegate(action)` | Вызывает action для каждой строки |
+| `ToStream(stream)` | В поток |
+| `ToFile(path)` | В файл |
 
-## 📈 CommandResult
-```csharp
-var result = await Command.Run("myapp").ExecuteAsync();
+### PipeSource
 
-// Свойства
-int exitCode = result.ExitCode;           // Код выхода
-bool success = result.IsSuccess;          // true если ExitCode == 0
-DateTimeOffset start = result.StartTime;  // Время запуска
-DateTimeOffset end = result.ExitTime;     // Время завершения
-TimeSpan duration = result.RunTime;       // Длительность выполнения
+| Метод | Описание |
+|-------|----------|
+| `Null` | Пустой ввод |
+| `FromString(text)` | Из строки |
+| `FromStream(stream)` | Из потока |
+| `FromFile(path)` | Из файла |
+| `FromBytes(data)` | Из массива байтов |
 
-// Методы
-result.EnsureSuccess();  // Выбрасывает CommandExecutionException если ExitCode != 0
-```
+### CommandResult
 
-## ⚡ Оптимизации
-
-Библиотека оптимизирована для производительности:
-
-| Аспект | Реализация |
-|--------|------------|
-| Memory | `ArrayPool<char>` для буферов чтения |
-| ValueTask | Меньше аллокаций для sync-path |
-| Record struct | `CommandResult` размещается на стеке |
-| file sealed | Внутренние классы скрыты от API |
-| Trimming | Полная поддержка Native AOT |
+| Свойство/Метод | Описание |
+|----------------|----------|
+| `ExitCode` | Код выхода процесса |
+| `IsSuccess` | true если ExitCode == 0 |
+| `StartTime` | Время запуска |
+| `ExitTime` | Время завершения |
+| `RunTime` | Длительность выполнения |
+| `EnsureSuccess()` | Выбрасывает исключение если ExitCode != 0 |
 
 ## 🧪 Примеры
 
@@ -479,6 +532,40 @@ await Command.Run("npm")
     .ExecuteAsync();
 ```
 
+## ⚡ Оптимизации
+
+Библиотека оптимизирована для производительности:
+
+| Аспект | Реализация |
+|--------|------------|
+| Memory | `ArrayPool<char>` для буферов чтения |
+| ValueTask | Меньше аллокаций для sync-path |
+| Record struct | `CommandResult` размещается на стеке |
+| file sealed | Внутренние классы скрыты от API |
+| Trimming | Полная поддержка Native AOT |
+
+## 🛠️ Сборка из исходников
+```bash
+# Клонировать репозиторий
+git clone https://github.com/yourname/SolimusWrapper.git
+cd SolimusWrapper
+
+# Восстановить зависимости
+dotnet restore
+
+# Собрать
+dotnet build
+
+# Запустить тесты
+dotnet test
+
+# Запустить демо
+dotnet run --project samples/SolimusWrapper.Demo
+
+# Создать NuGet пакет
+dotnet pack -c Release
+```
+
 ## 📄 Лицензия
 
 MIT License. См. [LICENSE](LICENSE) для подробностей.
@@ -495,5 +582,5 @@ Contributions welcome! Пожалуйста, создайте issue или pull 
 
 ## 📞 Связь
 
-- GitHub Issues: [Issues](https://github.com/13cyberpunk02/SolimusWrapper/issues)
+- GitHub Issues: [Issues](https://github.com/13cyberpunk/SolimusWrapper/issues)
 - Email: salawat1302@gmail.com

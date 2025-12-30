@@ -582,5 +582,5 @@ Contributions welcome! Пожалуйста, создайте issue или pull 
 
 ## 📞 Связь
 
-- GitHub Issues: [Issues](https://github.com/13cyberpunk/SolimusWrapper/issues)
+- GitHub Issues: [Issues](https://github.com/13cyberpunk02/SolimusWrapper/issues)
 - Email: salawat1302@gmail.com

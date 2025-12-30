@@ -33,7 +33,7 @@ await Command.Run("dotnet")
 
 // Realtime output
 var encoding = OperatingSystem.IsWindows() 
-    ? Encoding.GetEncoding(866)  // CP866 — DOS кириллица
+    ? Encoding.GetEncoding(866) 
     : Encoding.UTF8;
 
 await Command.Run("ping")

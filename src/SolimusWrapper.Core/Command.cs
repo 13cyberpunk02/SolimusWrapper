@@ -276,9 +276,15 @@ public sealed class Command
         return (stdOut.ToString().TrimEnd(), stdErr.ToString().TrimEnd());
     }
 
+    private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
     private async Task WriteStandardInputAsync(Process process, CancellationToken ct)
     {
-        await using var writer = new StreamWriter(process.StandardInput.BaseStream, _encoding);
+        await using var writer = new StreamWriter(
+            process.StandardInput.BaseStream, 
+            Utf8NoBom,
+            leaveOpen: false);
+    
         await _stdInSource!.CopyToAsync(writer, ct);
     }
 

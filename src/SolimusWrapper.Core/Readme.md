@@ -261,25 +261,27 @@ file sealed class NullPipeTarget : PipeTarget { }
 
 ### Метаданные в .csproj
 ```xml
+<Project Sdk="Microsoft.NET.Sdk">
 
-    net10.0
-    latest
-    enable
-    enable
-    
-    
-    SolimusWrapper
-    1.0.0
-    13cyberpunk02
-    Lightweight and optimized CLI wrapper for .NET
-    cli;process;command;shell;wrapper
-    MIT
-    https://github.com/13cyberpunk02/SolimusWrapper
-    README.md
-    
-    
-    true
-    true
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <PackageId>SolimusWrapper</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>13cyberpunk02</Authors>
+        <Description>Lightweight and optimized Command Line wrapper for .NET</Description>
+        <PackageTags>cli;process;command;shell</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/13cyberpunk02/solimuswrapper</RepositoryUrl>
+
+        <PublishTrimmed>true</PublishTrimmed>
+        <IsTrimmable>true</IsTrimmable>        
+    </PropertyGroup>
+
+</Project>
 ```
 
 ### Сборка пакета

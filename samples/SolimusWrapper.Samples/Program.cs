@@ -25,7 +25,7 @@ var stdErr = new StringBuilder();
 
 await Command.Run("dotnet")
     .WithArguments("build", "-v", "minimal")
-    .WithWorkingDirectory("C:\\Users\\Я\\RiderProjects\\PdfHelper") //Specify your path
+    .WithWorkingDirectory("path/to/project/") //Specify your path
     .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOut))
     .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErr))
     .WithValidation(throwOnNonZero: false)

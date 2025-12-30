@@ -311,9 +311,9 @@ dotnet nuget push bin/Release/SolimusWrapper.1.0.0.nupkg \
 
 ## 🔧 Зависимости
 
-- **Target Frameworks:** .NET 8.0, .NET 9.0
+- **Target Frameworks:** .NET 10.0
 - **External Dependencies:** None (zero dependencies)
-- **Language Version:** C# 12+
+- **Language Version:** C# 14+
 
 ## 📖 Примеры использования
 

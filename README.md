@@ -1,7 +1,7 @@
 # SolimusWrapper
 
 [![NuGet](https://img.shields.io/nuget/v/SolimusWrapper.svg)](https://www.nuget.org/packages/SolimusWrapper)
-[![License](https://img.shields.io/github/license/13cyberpunk02/SolimusWrapper/LICENSE)](LICENSE)
+[![License](https://img.shields.io/github/license/13cyberpunk02/SolimusWrapper?style=plastic)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Build](https://img.shields.io/github/actions/workflow/status/13cyberpunk02/SolimusWrapper/.github/workflows/dotnet.yml)](https://github.com/13cyberpunk02/SolimusWrapper/actions)
 

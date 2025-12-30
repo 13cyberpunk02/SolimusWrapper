@@ -254,13 +254,13 @@ await Command.Run("cmd")
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SolimusWrapper\SolimusWrapper.csproj" />
+    <ProjectReference Include="..\..\src\SolimusWrapper.Core\SolimusWrapper.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/SolimusWrapper.svg)](https://www.nuget.org/packages/SolimusWrapper)
 [![License](https://img.shields.io/github/license/13cyberpunk02/SolimusWrapper)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![Build](https://img.shields.io/github/actions/workflow/status/13cyberpunk02/SolimusWrapper/build.yml)](https://github.com/13cyberpunk02/SolimusWrapper/actions)
+[![Build](https://img.shields.io/github/actions/workflow/status/13cyberpunk02/SolimusWrapper/blob/master/.github/workflows/dotnet.yml)](https://github.com/13cyberpunk02/SolimusWrapper/actions)
 
 Лёгкая и оптимизированная библиотека для работы с CLI процессами в .NET. Простой и интуитивный API для запуска внешних команд с поддержкой перенаправления потоков, таймаутов, отмены и кросс-платформенной работы.
 

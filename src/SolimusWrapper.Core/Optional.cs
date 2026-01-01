@@ -5,12 +5,12 @@ namespace SolimusWrapper.Core;
 /// </summary>
 internal readonly struct Optional<T>
 {
-    private readonly T _value;
+    private readonly T? _value;
     
     public bool HasValue { get; }
-    public T Value => HasValue ? _value : throw new InvalidOperationException("No value");
+    public T? Value => HasValue ? _value : throw new InvalidOperationException("No value");
 
-    private Optional(T value)
+    public Optional(T? value)
     {
         _value = value;
         HasValue = true;

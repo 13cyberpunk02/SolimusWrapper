@@ -1,6 +1,6 @@
-using System.Buffers;
 using System.Diagnostics;
 using System.Text;
+using SolimusWrapper.Core.Logging;
 
 namespace SolimusWrapper.Core;
 
@@ -20,6 +20,7 @@ public sealed class Command
     private readonly bool _throwOnNonZeroExitCode;
     private readonly TimeSpan? _timeout;
     private readonly Action<int>? _onExitCode;
+    private readonly ICommandLogger? _logger;  // ← Новое поле
 
     private Command(
         string targetFilePath,
@@ -32,7 +33,8 @@ public sealed class Command
         Encoding? encoding = null,
         bool throwOnNonZeroExitCode = true,
         TimeSpan? timeout = null,
-        Action<int>? onExitCode = null)
+        Action<int>? onExitCode = null,
+        ICommandLogger? logger = null)  // ← Новый параметр
     {
         _targetFilePath = targetFilePath;
         _arguments = arguments ?? [];
@@ -45,6 +47,7 @@ public sealed class Command
         _throwOnNonZeroExitCode = throwOnNonZeroExitCode;
         _timeout = timeout;
         _onExitCode = onExitCode;
+        _logger = logger;
     }
 
     /// <summary>
@@ -66,7 +69,8 @@ public sealed class Command
         Encoding? encoding = null,
         bool throwOnNonZeroExitCode = true,
         TimeSpan? timeout = null,
-        Action<int>? onExitCode = null)
+        Action<int>? onExitCode = null,
+        ICommandLogger? logger = null)
     {
         return new Command(
             targetFilePath,
@@ -79,7 +83,8 @@ public sealed class Command
             encoding,
             throwOnNonZeroExitCode,
             timeout,
-            onExitCode);
+            onExitCode,
+            logger);
     }
 
     #region Clone Helper
@@ -95,7 +100,8 @@ public sealed class Command
         Encoding? encoding = null,
         bool? throwOnNonZeroExitCode = null,
         Optional<TimeSpan?> timeout = default,
-        Optional<Action<int>?> onExitCode = default)
+        Optional<Action<int>?> onExitCode = default,
+        Optional<ICommandLogger?> logger = default)
     {
         return new Command(
             targetFilePath ?? _targetFilePath,
@@ -108,7 +114,8 @@ public sealed class Command
             encoding ?? _encoding,
             throwOnNonZeroExitCode ?? _throwOnNonZeroExitCode,
             timeout.HasValue ? timeout.Value : _timeout,
-            onExitCode.HasValue ? onExitCode.Value : _onExitCode);
+            onExitCode.HasValue ? onExitCode.Value : _onExitCode,
+            logger.HasValue ? logger.Value : _logger);
     }
 
     #endregion
@@ -170,6 +177,108 @@ public sealed class Command
 
     #endregion
 
+    #region Safe Arguments
+
+    /// <summary>
+    /// Устанавливает аргументы с автоматическим экранированием
+    /// </summary>
+    public Command WithSafeArguments(params string[] args)
+    {
+        var escapedArgs = args.Select(ShellEscaper.Escape).ToArray();
+        return Clone(arguments: escapedArgs);
+    }
+
+    /// <summary>
+    /// Устанавливает аргументы с автоматическим экранированием
+    /// </summary>
+    public Command WithSafeArguments(IEnumerable<string> args)
+    {
+        var escapedArgs = args.Select(ShellEscaper.Escape).ToArray();
+        return Clone(arguments: escapedArgs);
+    }
+
+    #endregion
+
+    #region Logging
+
+    /// <summary>
+    /// Устанавливает логгер для команды
+    /// </summary>
+    public Command WithLogger(ICommandLogger logger) =>
+        Clone(logger: new Optional<ICommandLogger?>(logger));
+
+    /// <summary>
+    /// Устанавливает консольный логгер
+    /// </summary>
+    public Command WithConsoleLogging() =>
+        Clone(logger: new Optional<ICommandLogger?>(new ConsoleCommandLogger()));
+
+    /// <summary>
+    /// Устанавливает консольный логгер с настройками
+    /// </summary>
+    public Command WithConsoleLogging(Action<LoggingOptions> configure)
+    {
+        var options = new LoggingOptions();
+        configure(options);
+        return Clone(logger: new Optional<ICommandLogger?>(new ConsoleCommandLogger(options)));
+    }
+
+    /// <summary>
+    /// Устанавливает файловый логгер
+    /// </summary>
+    public Command WithFileLogging(string filePath) =>
+        Clone(logger: new Optional<ICommandLogger?>(new FileCommandLogger(filePath)));
+
+    /// <summary>
+    /// Устанавливает файловый логгер с настройками
+    /// </summary>
+    public Command WithFileLogging(string filePath, Action<LoggingOptions> configure)
+    {
+        var options = new LoggingOptions();
+        configure(options);
+        return Clone(logger: new Optional<ICommandLogger?>(new FileCommandLogger(filePath, options)));
+    }
+
+    /// <summary>
+    /// Отключает логирование
+    /// </summary>
+    public Command WithoutLogging() =>
+        Clone(logger: new Optional<ICommandLogger?>(null));
+
+    #endregion
+
+    #region Retry Methods
+
+    /// <summary>
+    /// Выполняет команду с повторными попытками
+    /// </summary>
+    public ValueTask<CommandResult> ExecuteWithRetryAsync(
+        RetryOptions options,
+        CancellationToken ct = default)
+        => RetryExecutor.ExecuteWithRetryAsync(this, options, ct);
+
+    /// <summary>
+    /// Выполняет команду с повторными попытками (настройка через делегат)
+    /// </summary>
+    public ValueTask<CommandResult> ExecuteWithRetryAsync(
+        Action<RetryOptions> configure,
+        CancellationToken ct = default)
+    {
+        var options = new RetryOptions();
+        configure(options);
+        return ExecuteWithRetryAsync(options, ct);
+    }
+
+    /// <summary>
+    /// Выполняет команду с повторными попытками и возвращает вывод
+    /// </summary>
+    public ValueTask<string> ExecuteWithRetryAndReadOutputAsync(
+        RetryOptions options,
+        CancellationToken ct = default)
+        => RetryExecutor.ExecuteWithRetryAndReadOutputAsync(this, options, ct);
+
+    #endregion
+
     #region Execution
 
     /// <summary>
@@ -188,19 +297,33 @@ public sealed class Command
             : null;
 
         var effectiveCt = linkedCts?.Token ?? ct;
-
         var startTime = DateTimeOffset.Now;
 
+        // Логируем запуск
+        _logger?.LogCommandStart(new CommandStartInfo(
+            _targetFilePath,
+            _arguments,
+            _workingDirectory,
+            startTime));
+
         if (!process.Start())
-            throw new InvalidOperationException($"Failed to start process: {_targetFilePath}");
+        {
+            var ex = new InvalidOperationException($"Failed to start process: {_targetFilePath}");
+            _logger?.LogError(ex);
+            throw ex;
+        }
 
         try
         {
+            // Создаём targets с поддержкой логирования
+            var stdOutTarget = CreateLoggingTarget(_stdOutTarget, isStdErr: false);
+            var stdErrTarget = CreateLoggingTarget(_stdErrTarget, isStdErr: true);
+
             var tasks = new List<Task>(3)
             {
-                _stdOutTarget.CopyFromAsync(
+                stdOutTarget.CopyFromAsync(
                     new StreamReader(process.StandardOutput.BaseStream, _encoding), effectiveCt),
-                _stdErrTarget.CopyFromAsync(
+                stdErrTarget.CopyFromAsync(
                     new StreamReader(process.StandardError.BaseStream, _encoding), effectiveCt)
             };
 
@@ -219,25 +342,43 @@ public sealed class Command
         catch (OperationCanceledException) when (timeoutCts?.IsCancellationRequested == true)
         {
             TryKillProcess(process);
-            throw new TimeoutException($"Command timed out after {_timeout}");
+            var ex = new TimeoutException($"Command timed out after {_timeout}");
+            _logger?.LogError(ex);
+            throw ex;
         }
         catch (OperationCanceledException)
         {
             TryKillProcess(process);
             throw;
         }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex);
+            throw;
+        }
 
-        // Проверяем таймаут ПОСЛЕ завершения процесса
-        // (процесс мог завершиться сам, но из-за таймаута)
         if (timeoutCts?.IsCancellationRequested == true)
         {
-            throw new TimeoutException($"Command timed out after {_timeout}");
+            var ex = new TimeoutException($"Command timed out after {_timeout}");
+            _logger?.LogError(ex);
+            throw ex;
         }
+
+        var endTime = DateTimeOffset.Now;
 
         var result = new CommandResult(
             process.ExitCode,
             startTime,
-            DateTimeOffset.Now);
+            endTime);
+
+        // Логируем завершение
+        _logger?.LogCommandEnd(new CommandEndInfo(
+            _targetFilePath,
+            result.ExitCode,
+            result.IsSuccess,
+            startTime,
+            endTime,
+            result.RunTime));
 
         _onExitCode?.Invoke(result.ExitCode);
 
@@ -276,15 +417,23 @@ public sealed class Command
         return (stdOut.ToString().TrimEnd(), stdErr.ToString().TrimEnd());
     }
 
+    private PipeTarget CreateLoggingTarget(PipeTarget inner, bool isStdErr)
+    {
+        if (_logger is null)
+            return inner;
+
+        return new LoggingPipeTarget(inner, _logger, isStdErr);
+    }
+
     private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     private async Task WriteStandardInputAsync(Process process, CancellationToken ct)
     {
         await using var writer = new StreamWriter(
-            process.StandardInput.BaseStream, 
+            process.StandardInput.BaseStream,
             Utf8NoBom,
             leaveOpen: false);
-    
+
         await _stdInSource!.CopyToAsync(writer, ct);
     }
 
@@ -322,13 +471,15 @@ public sealed class Command
         foreach (var arg in _arguments)
             startInfo.ArgumentList.Add(arg);
 
-        if (_environmentVariables is null) return new Process { StartInfo = startInfo };
-        foreach (var (key, value) in _environmentVariables)
+        if (_environmentVariables is not null)
         {
-            if (value is null)
-                startInfo.Environment.Remove(key);
-            else
-                startInfo.Environment[key] = value;
+            foreach (var (key, value) in _environmentVariables)
+            {
+                if (value is null)
+                    startInfo.Environment.Remove(key);
+                else
+                    startInfo.Environment[key] = value;
+            }
         }
 
         return new Process { StartInfo = startInfo };

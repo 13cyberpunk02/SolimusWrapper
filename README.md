@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build and Test](https://github.com/13cyberpunk02/SolimusWrapper/actions/workflows/dotnet.yml/badge.svg)](https://github.com/13cyberpunk02/SolimusWrapper/actions/workflows/dotnet.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-
+[![Build](https://github.com/13cyberpunk02/SolimusWrapper/actions/workflows/build.yml/badge.svg)](https://github.com/yourname/MyCliWrapper/actions/workflows/build.yml)
 Лёгкая и оптимизированная библиотека для работы с CLI процессами в .NET. Простой и интуитивный API для запуска внешних команд с поддержкой перенаправления потоков, таймаутов, повторных попыток, логирования и кросс-платформенной работы.
 
 ## ✨ Особенности
